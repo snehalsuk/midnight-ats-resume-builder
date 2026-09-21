@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ personal_info.name }} | Resume</title>
+<style>
+  @page {
+    size: {{ page_size }};
+    margin: {{ margin_in }}in;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: '{{ font_family }}', Arial, Helvetica, sans-serif;
+    font-size: {{ font_size_pt }}pt;
+    line-height: {{ line_spacing }};
+    color: #111111;
+    margin: 0;
+  }
+  h1.name {
+    font-size: {{ font_size_pt + 9 }}pt;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 4pt 0;
+    letter-spacing: 0.5pt;
+  }
+  .title-line {
+    text-align: center;
+    font-size: {{ font_size_pt + 1 }}pt;
+    margin: 0 0 4pt 0;
+  }
+  .contact-line {
+    text-align: center;
+    font-size: {{ font_size_pt - 1 }}pt;
+    margin: 0 0 2pt 0;
+  }
+  .contact-line a { color: #2563eb; text-decoration: none; }
+  .contact-line .sep { color: #111111; padding: 0 4pt; }
+  h2.section-title {
+    font-size: {{ heading_size_pt }}pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1pt solid #333333;
+    margin: {{ section_spacing_pt }}pt 0 4pt 0;
+    padding-bottom: 1pt;
+  }
+  .section-title:first-of-type { margin-top: {{ section_spacing_pt * 0.6 }}pt; }
+  p.summary-text { margin: 0; text-align: justify; }
+  .skill-category { margin: 0 0 {{ bullet_spacing_pt }}pt 0; }
+  .skill-category .label { font-weight: 700; }
+  /* Each skill renders as its own span so styles can turn it into a
+     colored chip; the ", " separator is real text content (not just
+     visual spacing) so the ATS Parsing Simulator's re-extracted PDF
+     text still reads as a normal comma-separated list either way. */
+  .skill-tag:not(:last-child)::after { content: ", "; }
+  .entry { margin: 0 0 {{ bullet_spacing_pt * 2 }}pt 0; }
+  .entry:last-child { margin-bottom: 0; }
+  .entry-header { display: flex; justify-content: space-between; font-weight: 700; }
+  .entry-sub { font-style: italic; font-size: {{ font_size_pt - 0.5 }}pt; margin-bottom: 2pt; }
+  ul.bullets { margin: 2pt 0 0 0; padding-left: 14pt; }
+  ul.bullets li { margin-bottom: {{ bullet_spacing_pt }}pt; }
+  ul.bullets li:last-child { margin-bottom: 0; }
+  .edu-line, .cert-line { margin: 0 0 {{ bullet_spacing_pt }}pt 0; }
+  .edu-line:last-child, .cert-line:last-child { margin-bottom: 0; }
+  .plain-text { margin: 0; white-space: pre-wrap; }
+
+  /* Real PDF margin comes from @page above, but browsers never honor
+     @page margins for on-screen rendering — only WeasyPrint does. Without
+     this, the on-screen preview shows text flush against the page edges,
+     which doesn't match the real export at all. @media screen is ignored
+     by WeasyPrint (verified: it renders for the "print" media type), so
+     this padding only ever affects the live preview, never the PDF. */
+  @media screen {
+    body { padding: {{ margin_in }}in; }
+  }
+
+  /* ---- Template style variants ----
+     All variants keep the same single-column, table-free, image-free
+     structure (spec §12 ATS-safety rules) — only typography, alignment,
+     and color differ. Base rules above are the "classic" look; each
+     variant below only overrides what's actually different. */
+
+  body.style-modern h1.name,
+  body.style-modern .title-line { text-align: left; }
+  body.style-modern .contact-line { text-align: left; }
+  body.style-modern h1.name { color: {{ accent_color }}; letter-spacing: 0; }
+  body.style-modern h2.section-title {
+    color: {{ accent_color }};
+    border-bottom: 2pt solid {{ accent_color }};
+  }
+
+  body.style-minimal h2.section-title {
+    border-bottom: none;
+    letter-spacing: 1.5pt;
+    padding-bottom: 0;
+  }
+  body.style-minimal .entry-header { border-bottom: 0.5pt solid #d4d4d4; padding-bottom: 2pt; }
+
+  body.style-executive h1.name { font-size: {{ font_size_pt + 13 }}pt; letter-spacing: 1pt; }
+  body.style-executive h2.section-title {
+    background: #f1f5f9;
+    border-bottom: none;
+    padding: 3pt 6pt;
+    margin-left: -6pt;
+    margin-right: -6pt;
+  }
+
+  body.style-compact { font-size: {{ [font_size_pt - 0.5, 10] | max }}pt; }
+  body.style-compact h1.name,
+  body.style-compact .title-line,
+  body.style-compact .contact-line { text-align: left; }
+  body.style-compact h2.section-title { margin-top: {{ section_spacing_pt * 0.6 }}pt; }
+  body.style-compact .entry { margin-bottom: {{ bullet_spacing_pt }}pt; }
+
+  body.style-bold h1.name,
+  body.style-bold .title-line,
+  body.style-bold .contact-line {
+    background: {{ accent_color }};
+    color: #ffffff;
+    text-align: left;
+    margin-left: -{{ margin_in }}in;
+    margin-right: -{{ margin_in }}in;
+    padding-left: {{ margin_in }}in;
+    padding-right: {{ margin_in }}in;
+    margin-bottom: 0;
+  }
+  body.style-bold h1.name { padding-top: 10pt; }
+  body.style-bold .contact-line:last-of-type { padding-bottom: 10pt; margin-bottom: {{ section_spacing_pt * 0.5 }}pt; }
+  body.style-bold .contact-line a { color: #ffffff; text-decoration: underline; }
+  body.style-bold .contact-line .sep { color: rgba(255, 255, 255, 0.55); }
+  body.style-bold h2.section-title { color: {{ accent_color }}; border-bottom: 2pt solid {{ accent_color }}; }
+  body.style-bold .skill-tag {
+    /* No horizontal padding: WeasyPrint gives a horizontally-padded inline
+       box its own text run in the PDF content stream, which makes
+       line-clustering text extractors (pdfplumber/PyMuPDF, and real-world
+       ATS parsers) split each chip onto its own "line" instead of reading
+       them as one comma-separated skills line. The horizontal breathing
+       room inside each pill comes from literal &nbsp; characters in the
+       template instead (see professional_ats.html.jinja), which are real
+       text and don't trigger that split. Vertical padding is safe. */
+    background: #eef2f7;
+    color: {{ accent_color }};
+    border-radius: 3pt;
+    padding-top: 1pt;
+    padding-bottom: 1pt;
+    margin: 0 3pt 3pt 0;
+  }
+  /* the ", " separator stays in the text stream for ATS re-extraction but
+     is colored to match the pill background so it isn't visible inside it */
+  body.style-bold .skill-tag::after { color: #eef2f7; }
+
+  body.style-accent .title-line { color: {{ accent_color }}; font-weight: 600; }
+  body.style-accent .contact-line a { color: {{ accent_color }}; }
+  body.style-accent h1.name,
+  body.style-accent .title-line,
+  body.style-accent .contact-line { text-align: left; }
+  body.style-accent h2.section-title {
+    color: {{ accent_color }};
+    border-bottom: none;
+    border-left: 3pt solid {{ accent_color }};
+    padding-left: 8pt;
+  }
+  body.style-accent .skill-tag {
+    background: {{ accent_color }};
+    color: #ffffff;
+    border-radius: 3pt;
+    padding-top: 1pt;
+    padding-bottom: 1pt;
+    margin: 0 3pt 3pt 0;
+  }
+  body.style-accent .skill-tag::after { color: {{ accent_color }}; }
+  body.style-accent ul.bullets { list-style: none; padding-left: 2pt; }
+  body.style-accent ul.bullets li::before { content: "\2713  "; color: {{ accent_color }}; font-weight: 700; }
+</style>
+</head>
+<body class="style-{{ template_style }}">
+  <h1 class="name">{{ personal_info.name }}</h1>
+  {% if personal_info.title %}<div class="title-line">{{ personal_info.title }}</div>{% endif %}
+  {% if contact_line_1 %}
+  <div class="contact-line">
+    {% for item in contact_line_1 %}{% if not loop.first %}<span class="sep">|</span>{% endif %}{% if item.href %}<a href="{{ item.href }}">{{ item.text }}</a>{% else %}{{ item.text }}{% endif %}{% endfor %}
+  </div>
+  {% endif %}
+  {% if contact_line_2 %}
+  <div class="contact-line">
+    {% for item in contact_line_2 %}{% if not loop.first %}<span class="sep">|</span>{% endif %}{% if item.href %}<a href="{{ item.href }}">{{ item.text }}</a>{% else %}{{ item.text }}{% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  {% for section in sections %}
+    {% if section.visible %}
+      <h2 class="section-title">{{ section.title }}</h2>
+      {% if section.type == 'summary' %}
+        <p class="summary-text">{{ section.content.text or '' }}</p>
+
+      {% elif section.type == 'skills' %}
+        {% for cat in section.content.categories or [] %}
+          <div class="skill-category">
+            <span class="label">{{ cat.name }}:</span>
+            {% for skill in cat['items'] or [] %}<span class="skill-tag">{% if template_style in ('bold', 'accent') %}&nbsp;{{ skill }}&nbsp;{% else %}{{ skill }}{% endif %}</span>{% endfor %}
+          </div>
+        {% endfor %}
+
+      {% elif section.type == 'experience' %}
+        {% for item in section.content.get('items', []) %}
+          <div class="entry">
+            <div class="entry-header">
+              <span>{{ item.title }}{% if item.company %} | {{ item.company }}{% endif %}</span>
+              <span>{{ item.startDate }}{% if item.startDate or item.endDate %} – {% endif %}{{ item.endDate }}</span>
+            </div>
+            {% if item.location %}<div class="entry-sub">{{ item.location }}</div>{% endif %}
+            {% if item.bullets %}
+            <ul class="bullets">
+              {% for b in item.bullets %}<li>{{ b }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+      {% elif section.type == 'projects' %}
+        {% for item in section.content.get('items', []) %}
+          <div class="entry">
+            <div class="entry-header"><span>{{ item.name }}</span></div>
+            {% if item.technologies %}<div class="entry-sub">{{ item.technologies | join(', ') }}</div>{% endif %}
+            {% if item.bullets %}
+            <ul class="bullets">
+              {% for b in item.bullets %}<li>{{ b }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+      {% elif section.type == 'education' %}
+        {% for item in section.content.get('items', []) %}
+          <div class="edu-line">
+            {{ item.degree }}{% if item.institution %} | {{ item.institution }}{% endif %}{% if item.gpa %} | {{ item.gpa }}{% endif %}{% if item.year %} | {{ item.year }}{% endif %}
+          </div>
+        {% endfor %}
+
+      {% elif section.type == 'certifications' %}
+        {% for item in section.content.get('items', []) %}
+          <div class="cert-line">
+            {{ item.name }}{% if item.issuer %} | {{ item.issuer }}{% endif %}{% if item.year %} | {{ item.year }}{% endif %}{% if item.credentialUrl %} | Credential: {{ item.credentialUrl }}{% endif %}
+          </div>
+        {% endfor %}
+
+      {% else %}
+        {% if section.content.text %}<p class="plain-text">{{ section.content.text }}</p>{% endif %}
+        {% if section.content.get('items') %}
+        <ul class="bullets">
+          {% for i in section.content.get('items') %}<li>{{ i }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</body>
+</html>

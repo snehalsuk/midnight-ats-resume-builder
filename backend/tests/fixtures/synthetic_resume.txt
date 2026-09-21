@@ -1,0 +1,35 @@
+JANE DOE
+Backend Engineer
+Remote, USA | jane.doe@example.com | (555) 123-4567 | linkedin.com/in/janedoe
+GitHub: github.com/janedoe
+
+PROFESSIONAL SUMMARY
+Backend engineer with 5 years of experience building distributed systems in Python and Go.
+
+TECHNICAL SKILLS
+Languages: Python, Go, SQL
+Cloud: AWS, GCP, Terraform
+
+PROFESSIONAL EXPERIENCE
+Senior Backend Engineer — Acme Corp
+Jan 2021 – Present
+• Built a payments processing service handling 10k requests per second.
+• Migrated legacy services to Kubernetes, reducing infra costs by 20%.
+
+Backend Engineer — Beta Systems
+Jun 2018 – Dec 2020
+• Designed REST APIs for the core product.
+
+KEY PROJECTS
+Open Metrics Dashboard
+Go, Prometheus, Grafana
+• Built an internal metrics dashboard used by 50+ engineers.
+
+EDUCATION
+B.S. Computer Science — State University | GPA: 3.8 | 2018
+
+CERTIFICATIONS
+AWS Certified Solutions Architect | 2022 | Credential: aws.amazon.com/verify/abc123
+
+AWARDS
+Employee of the Year 2022
